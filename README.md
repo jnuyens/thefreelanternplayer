@@ -36,6 +36,26 @@ ZIP of the app directory, built with a deterministic file order so the output is
 reproducible). Install it via the MicroPythonOS App Store or by copying it to the
 device.
 
+## Releasing
+
+Releases are published to [BadgeHub](https://badgehub.eu) automatically by the
+`Publish to BadgeHub` GitHub Action. Bump `version` in `MANIFEST.JSON`, then push a
+matching tag:
+
+```sh
+git tag v1.0.3 && git push origin v1.0.3
+```
+
+The action builds the `.mpk`, uploads it to the project's draft, and publishes it
+as a new version.
+
+One-time setup:
+
+1. Create the project on badgehub.eu with slug `com.linuxbe.thefreelanternplayer`
+   and select the `mpos_api_0` badge.
+2. Generate a project API token on BadgeHub and store it as the repo secret
+   `BADGEHUB_TOKEN` (Settings > Secrets and variables > Actions).
+
 ## History
 
 Originally developed and released in the MicroPythonOS monorepo as

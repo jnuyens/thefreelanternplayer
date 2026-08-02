@@ -12,7 +12,6 @@
     }
   ],
   "category": "audio",
-  "download_url": "https://apps.micropythonos.com/apps/com.linuxbe.thefreelanternplayer/mpks/com.linuxbe.thefreelanternplayer_1.0.3.mpk",
   "fullname": "com.linuxbe.thefreelanternplayer",
   "icon_url": "https://www.thefreelantern.com/favicon-64x64.png",
   "long_description": "Streams music from The Free Lantern website or from local SD card.",

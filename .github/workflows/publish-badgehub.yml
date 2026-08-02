@@ -1,0 +1,72 @@
+name: Publish to BadgeHub
+
+# Builds the .mpk and publishes it to BadgeHub on a version tag (e.g. v1.0.3),
+# or on manual dispatch. One-time setup:
+#   1. Create the project on badgehub.eu with slug com.linuxbe.thefreelanternplayer
+#      and select the "mpos_api_0" badge.
+#   2. Generate a project API token on BadgeHub and store it as the repo secret
+#      BADGEHUB_TOKEN (Settings > Secrets and variables > Actions).
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SLUG: com.linuxbe.thefreelanternplayer
+  BASE: https://badgehub.eu/api/v3
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read app version from MANIFEST.JSON
+        id: meta
+        run: |
+          version=$(python3 -c "import json;print(json.load(open('$SLUG/MANIFEST.JSON'))['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "App version: $version"
+
+      - name: Verify tag matches manifest version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$tag" != "${{ steps.meta.outputs.version }}" ]; then
+            echo "Tag v$tag does not match MANIFEST.JSON version ${{ steps.meta.outputs.version }}" >&2
+            exit 1
+          fi
+
+      - name: Build .mpk
+        run: |
+          sudo apt-get update && sudo apt-get install -y zip
+          ./build.sh
+
+      - name: Upload .mpk to BadgeHub draft
+        env:
+          BADGEHUB_TOKEN: ${{ secrets.BADGEHUB_TOKEN }}
+        run: |
+          if [ -z "$BADGEHUB_TOKEN" ]; then
+            echo "BADGEHUB_TOKEN secret is not set." >&2
+            exit 1
+          fi
+          mpk="${SLUG}_${{ steps.meta.outputs.version }}.mpk"
+          echo "Uploading dist/$mpk to draft of $SLUG"
+          curl --fail-with-body -sS -X POST \
+            -H "badgehub-api-token: $BADGEHUB_TOKEN" \
+            -F "file=@dist/$mpk" \
+            "$BASE/projects/$SLUG/draft/files/$mpk"
+
+      - name: Publish the draft as a new version
+        env:
+          BADGEHUB_TOKEN: ${{ secrets.BADGEHUB_TOKEN }}
+        run: |
+          curl --fail-with-body -sS -X PATCH \
+            -H "badgehub-api-token: $BADGEHUB_TOKEN" \
+            "$BASE/projects/$SLUG/publish"
+          echo "Published $SLUG ${{ steps.meta.outputs.version }} to BadgeHub."

@@ -62,6 +62,22 @@ jobs:
             -F "file=@dist/$mpk" \
             "$BASE/projects/$SLUG/draft/files/$mpk"
 
+      - name: Upload and set the store icon
+        env:
+          BADGEHUB_TOKEN: ${{ secrets.BADGEHUB_TOKEN }}
+        run: |
+          # Upload the 64x64 icon, then have BadgeHub generate the store icon
+          # sizes from it (this is what appears as the app thumbnail).
+          curl --fail-with-body -sS -X POST \
+            -H "badgehub-api-token: $BADGEHUB_TOKEN" \
+            -F "file=@$SLUG/icon_64x64.png" \
+            "$BASE/projects/$SLUG/draft/files/icon_64x64.png"
+          curl --fail-with-body -sS -X POST \
+            -H "badgehub-api-token: $BADGEHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"filePath":"icon_64x64.png","sizes":["64x64"]}' \
+            "$BASE/projects/$SLUG/draft/icon"
+
       - name: Publish the draft as a new version
         env:
           BADGEHUB_TOKEN: ${{ secrets.BADGEHUB_TOKEN }}

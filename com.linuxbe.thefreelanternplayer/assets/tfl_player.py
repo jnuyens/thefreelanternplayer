@@ -82,8 +82,8 @@ FRAGMENT_SECONDS = 45  # estimate for UI
 # Streaming fragment cache. Prefer the SD card when present (far more room),
 # otherwise internal flash. Fragments are small (ADPCM ~250KiB), so only a
 # little free space is needed to keep a short rolling buffer.
-CACHE_DIR = "/cache_audio"                          # internal streaming cache (fallback)
-SD_STREAM_CACHE_DIR = "/sdcard/.tfl_stream_cache"   # streaming cache on SD when present
+CACHE_DIR = "/cache/com.linuxbe.thefreelanternplayer"                  # standardized /cache/<fqn>
+SD_STREAM_CACHE_DIR = "/sdcard/cache/com.linuxbe.thefreelanternplayer"  # standardized /sdcard/cache/<fqn>
 STREAM_CACHE_MIN_BYTES = 512 * 1024                 # need ~0.5MiB free on the chosen cache fs
 
 # State file (stored in cache dir)
@@ -96,22 +96,30 @@ SD_TIMESTAMP_FILE  = SD_MUSIC_ROOT + "/.tfl_album_timestamp.json"
 SD_INPROGRESS_FILE = SD_MUSIC_ROOT + "/.tfl_download_in_progress.json"
 VERIFY_AFTER_DAYS  = 10
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.4"
 
 # Base path for bundled image assets on the LVGL "M:" virtual filesystem.
 # The desktop sim cwd is internal_filesystem/ so M: resolves from there.
 # icon_64x64.png lives one level above assets/ (app package root).
-_ASSET_BASE = "M:apps/com.micropythonos.thefreelanternplayer/assets/"
-_ICON_PATH  = "M:apps/com.micropythonos.thefreelanternplayer/icon_64x64.png"
+_ASSET_BASE = "M:apps/com.linuxbe.thefreelanternplayer/assets/"
+_ICON_PATH  = "M:apps/com.linuxbe.thefreelanternplayer/icon_64x64.png"
 
 # -------------------------
 # Filesystem helpers
 # -------------------------
 def ensure_dir(path):
-    try:
-        os.mkdir(path)
-    except OSError:
-        pass
+    # mkdir -p: os.mkdir only creates one level, so create each parent in turn
+    # (the standardized /cache/<fqn> and /sdcard/cache/<fqn> parents may not exist).
+    cur = "/" if path.startswith("/") else ""
+    for part in path.split("/"):
+        if not part:
+            continue
+        cur += part
+        try:
+            os.mkdir(cur)
+        except OSError:
+            pass
+        cur += "/"
 
 def exists(path):
     try:
@@ -152,7 +160,7 @@ def pick_stream_cache_dir(sd_present):
             pass
     return CACHE_DIR
 
-# Choose a writable cache dir (ESP32 prefers /cache_audio; desktop runner may not allow writing to /)
+# Choose a writable cache dir (device uses /cache/<fqn>; desktop runner may not allow writing to /)
 def init_cache_dir():
     global CACHE_DIR
     try:

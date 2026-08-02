@@ -1,0 +1,8 @@
+# Build output
+/dist/
+*.mpk
+
+# Python / editor cruft
+__pycache__/
+*.pyc
+.DS_Store
